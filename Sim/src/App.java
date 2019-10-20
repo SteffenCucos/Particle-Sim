@@ -72,8 +72,8 @@ public class App extends Applet implements KeyListener, ActionListener
 	}
     
 	public Point getParameterizedPoint(int t) {
-		float x = (float) (400*Math.cos(t/180f*Math.PI)+width/2);
-		float y = (float) (400*Math.sin(t/180f*Math.PI)+height/2);
+		float x = (float) (width/2*(1 + Math.cos(t/180f*Math.PI)));
+		float y = (float) (height/2*(1 + Math.sin(t/180f*Math.PI)));
 		
 		return new Point(x, y);
 	}
@@ -95,13 +95,13 @@ public class App extends Applet implements KeyListener, ActionListener
 				this.simulator.addParticle(1000, getMousePoint());
 				break;
 			case KeyEvent.VK_3:
+				//Add points in a sphere
 				for(int t = 0; t < 360; t++) {
-					for(int i = 0; i < 20; i++) {
-						this.simulator.addParticle(1, getParameterizedPoint(t));
-					}
+					this.simulator.addParticle(1, getParameterizedPoint(t));
 				}
 				break;
 			case KeyEvent.VK_4:
+				//Fill the screen with points
 				for(int x = 0; x < width; x++) {
 					for(int y = 0; y < height; y++) {
 						this.simulator.addParticle(1, new Point(x,y));

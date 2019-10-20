@@ -1,5 +1,4 @@
 
-//import java.applet.Applet;
 import java.awt.*;
 
 
@@ -14,17 +13,15 @@ public class Particle {
 		this.location = location;
 		this.direction = direction;
 		this.mass = mass;
-		
 	}
 	
 	public void paint(Graphics g) {
 		g.fillRect((int)this.location.x-1, (int)this.location.y-1, 2, 2);
-		
 	}
 	
 	public void update(Point CenterOfMass, Point bottomLeft, Point topRight) {	
 		this.location.Add(this.direction);
-		this.drag();
+		//this.drag();
 		this.bounce(bottomLeft, topRight);
 		this.attract(CenterOfMass);
 	}
@@ -41,6 +38,10 @@ public class Particle {
 	    float dy = Mass.y-d.y;
 	    
 	    double distance = Math.sqrt(dx*dx+dy*dy);
+	    
+	    if(distance == 0) {
+	    	return;
+	    }
 	    
 	    float newXdir = dx/(float)distance/1;
 	    float newYdir = dy/(float)distance/1;

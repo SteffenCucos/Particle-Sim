@@ -17,8 +17,8 @@ public class App extends Applet implements KeyListener, ActionListener
 	Image offscreen;
 	Simulator simulator;
 	
-	int width = 1000;
-	int height = 1000;
+	int width = 900;
+	int height = 900;
 	int startTimer = 0;
 	int frameInLastSecond = 0;
 	int framesInCurrentSecond = 0;
@@ -102,12 +102,14 @@ public class App extends Applet implements KeyListener, ActionListener
 				break;
 			case KeyEvent.VK_4:
 				//Fill the screen with points
-				for(int x = 0; x < width; x++) {
-					for(int y = 0; y < height; y++) {
+				for(int x = 0; x < width; x+=4) {
+					for(int y = 0; y < height; y+=4) {
 						this.simulator.addParticle(1, new Point(x,y));
 					}
 				}
 				break;
+			case KeyEvent.VK_5:
+				this.simulator.particles = new ArrayList<Particle>();
 			default:
 				break;
 		}

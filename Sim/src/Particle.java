@@ -9,6 +9,9 @@ public class Particle {
 	protected float mass;
 	protected Color color;
 	
+	int interpolationTime = 1;
+	int interpolationStep = 4;
+	
 	public Particle(Point location, Point direction, float mass) {
 		this.location = location;
 		this.direction = direction;
@@ -46,16 +49,22 @@ public class Particle {
 	    float newXdir = dx/(float)distance/1;
 	    float newYdir = dy/(float)distance/1;
 	    
-	    
-	    this.direction.x += newXdir;
-	    this.direction.y += newYdir;
+	    if(false || interpolationTime >= interpolationStep) {
+		    this.drag();
+		    this.direction.x += newXdir/interpolationStep;
+		    this.direction.y += newYdir/interpolationStep;
+		    interpolationTime = 1;
+	    } else {
+		    interpolationTime++;
+	    }
+
 	}
 	
 	public void bounce(Point bottomLeft, Point topRight) {
-		if(this.location.x < bottomLeft.x ||this.location.x > topRight.x) {
+		if(this.location.x < bottomLeft.x || this.location.x > topRight.x) {
 			this.direction.x *= -1;
 		}
-		if(this.location.y > bottomLeft.y ||this.location.y < topRight.y) {
+		if(this.location.y > bottomLeft.y || this.location.y < topRight.y) {
 			this.direction.y *= -1;
 		}
 	}

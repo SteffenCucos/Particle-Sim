@@ -1,3 +1,4 @@
+
 # Java Particle Simulator
 This project implements a toy particle simulator, that aims to approximate the gravitational interactions of an arbitrary amount of particles in an otherwise closed and empty system. The gravitational approximation is applied by attracting all individual particles to their collective center of mass, with a strength proportional to the inverse square root of each particles distance to the center of mass.
 
@@ -10,7 +11,6 @@ There are several key bindings to interact with the simulation
 - Pressing 4 on the keyboard create a grid of particles on the entire screen, one at every 4th X & Y position starting at (0,0)
 - Pressing 5 on the keyboard will clear all the particles in the simulation, effectively resetting it.
 
-<iframe src="https://giphy.com/embed/XClIzqMU53ihRTGw4V" width="480" height="479" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/XClIzqMU53ihRTGw4V"></a></p>
+![](https://media.giphy.com/media/XClIzqMU53ihRTGw4V/giphy.gif)
 
-<iframe src="https://giphy.com/embed/RgtoFGf8SkISeDq54p" width="480" height="479" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/RgtoFGf8SkISeDq54p"></a></p>
-
+![](https://media.giphy.com/media/RgtoFGf8SkISeDq54p/giphy.gif)

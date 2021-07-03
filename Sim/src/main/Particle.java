@@ -1,16 +1,14 @@
+package main;
 
 import java.awt.*;
 
 
 public class Particle {
 
-	protected Point location;
-	protected Point direction;
-	protected float mass;
-	protected Color color;
-	
-	int interpolationTime = 1;
-	int interpolationStep = 4;
+	public Point location;
+	public Point direction;
+	public float mass;
+	public Color color;
 	
 	public Particle(Point location, Point direction, float mass) {
 		this.location = location;
@@ -19,14 +17,13 @@ public class Particle {
 	}
 	
 	public void paint(Graphics g) {
-		g.fillRect((int)this.location.x-1, (int)this.location.y-1, 2, 2);
+		g.setColor(color);
+		//g.fillRect((int)this.location.x-1, (int)this.location.y-1, 2, 2);
+		g.fillRect((int)this.location.x, (int)this.location.y, 1, 1);
 	}
 	
-	public void update(Point CenterOfMass, Point bottomLeft, Point topRight) {	
+	public void updatePosition() {
 		this.location.Add(this.direction);
-		//this.drag();
-		this.bounce(bottomLeft, topRight);
-		this.attract(CenterOfMass);
 	}
 	
 	public void drag() {
@@ -34,11 +31,11 @@ public class Particle {
 		this.direction.y*=0.99;
 	}
 	
-	public void attract(Point Mass) {
+	public void attract(Point centerOfMass, int interpolationStep) {
 		Point d = this.location;
 		//System.out.println(d.x+" "+d.y);
-	    float dx = Mass.x-d.x;
-	    float dy = Mass.y-d.y;
+	    float dx = centerOfMass.x-d.x;
+	    float dy = centerOfMass.y-d.y;
 	    
 	    double distance = Math.sqrt(dx*dx+dy*dy);
 	    
@@ -48,16 +45,10 @@ public class Particle {
 	    
 	    float newXdir = dx/(float)distance/1;
 	    float newYdir = dy/(float)distance/1;
-	    
-	    if(false || interpolationTime >= interpolationStep) {
-		    this.drag();
-		    this.direction.x += newXdir/interpolationStep;
-		    this.direction.y += newYdir/interpolationStep;
-		    interpolationTime = 1;
-	    } else {
-		    interpolationTime++;
-	    }
-
+    	
+	    this.drag();
+	    this.direction.x += newXdir/interpolationStep;
+	    this.direction.y += newYdir/interpolationStep;
 	}
 	
 	public void bounce(Point bottomLeft, Point topRight) {
@@ -76,7 +67,16 @@ public class Particle {
     	return (float)Math.sqrt(dx*dx+dy*dy);
     }
 	
+	public void updateColor(Point CenterOfMass) {
+		float distance = this.getDistanceFrom(CenterOfMass);
+		
+		float a = 120;
+		int r = (int)Math.abs(Math.sin(distance/a*Math.PI)*255);
+		int g = (int)Math.abs(Math.cos(distance/a*Math.PI)*255);	
+		int b = (int)Math.abs(Math.cos(distance/a*Math.PI-Math.PI/4f)*255);
 	
+		this.color = new Color(r, g, b);
+	}
 	
 	
 	

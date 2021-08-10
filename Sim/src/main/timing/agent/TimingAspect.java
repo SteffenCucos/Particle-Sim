@@ -12,12 +12,12 @@ public class TimingAspect {
 	@Around("execution(@Time * *(..)) && @annotation(timeAnnotation)")
 	public Object time(ProceedingJoinPoint proceedingJoinPoint, Time timeAnnotation) throws Throwable {
 		long startTime = System.currentTimeMillis();
-		
+
 		Object result = proceedingJoinPoint.proceed();
-		
+
 		long endTime = System.currentTimeMillis();
 		System.out.println(timeAnnotation.value() + " took " + (endTime - startTime) + " milliseconds");
-		
+
 		return result;
 	}
 }

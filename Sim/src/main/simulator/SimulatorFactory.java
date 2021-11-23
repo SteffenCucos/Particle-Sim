@@ -13,17 +13,17 @@ public class SimulatorFactory {
 		return impl; // getProxiedSimulator(impl);
 	}
 
-	public ParticleSimulator getThreadedSimulator(BufferedImage image, int width, int height, int interpolationStep,
-			int parallelism) {
+	public ParticleSimulator getThreadedSimulator(BufferedImage image, int width, int height, int interpolationStep, int parallelism) {
 		ParticleSimulator impl = new ThreadedSimulator(image, width, height, interpolationStep, parallelism);
-
 		return impl; // getProxiedSimulator(impl);
 	}
 
 	@SuppressWarnings("unchecked")
 	public Simulator<Particle> getProxiedSimulator(Simulator<Particle> impl) {
-		return (Simulator<Particle>) Proxy.newProxyInstance(ParticleSimulator.class.getClassLoader(),
-				new Class[] { Simulator.class }, new InvocationHandler() {
+		return (Simulator<Particle>) Proxy.newProxyInstance(
+				ParticleSimulator.class.getClassLoader(),
+				new Class[] { Simulator.class }, 
+				new InvocationHandler() {
 					@Override
 					public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 						if (!method.isAnnotationPresent(Simulator.Time.class)) {

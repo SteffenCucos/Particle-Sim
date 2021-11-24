@@ -16,21 +16,21 @@ public class TimingAspect {
 	@Around("execution(@Time * *(..)) && @annotation(timeAnnotation)")
 	public Object time(ProceedingJoinPoint proceedingJoinPoint, Time timeAnnotation) throws Throwable {
 		long startTime = System.currentTimeMillis();
-		Exception exception = null;
+		Throwable thrown = null;
 		try {
 			return proceedingJoinPoint.proceed();
-		} catch (Exception e) {
-			exception = e;
-			throw e; // Re-throw the exception, the caller needs to know about it.
+		} catch (Throwable t) {
+			thrown = t;
+			throw t; // Re-throw the exception, the caller needs to know about it.
 		} finally {
 			/* According to https://docs.oracle.com/javase/tutorial/essential/exceptions/finally.html
 			 * finally blocks always run immediately after the try/catch blocks finish, so stopping the 
 			 * stop watch here will be accurate.*/
 			long endTime = System.currentTimeMillis();
 			String timeTaken = (endTime - startTime) + " milliseconds";
-			String outcome = exception == null
+			String outcome = thrown == null
 					? "took"
-					: String.format("failed with exception: {%s} after", exception.getMessage());
+					: String.format("failed with exception: {%s} after", thrown.getMessage());
 			
 			String msg = String.format("%s %s %s", timeAnnotation.value(), outcome, timeTaken);
 			//System.out.println(msg);

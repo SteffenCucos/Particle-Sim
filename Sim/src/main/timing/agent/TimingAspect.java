@@ -1,14 +1,41 @@
 package main.timing.agent;
 
+import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 import java.util.logging.Logger;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Aspect;
+
+import com.google.common.collect.Maps;
+
 import org.aspectj.lang.annotation.Around;
 
 import main.simulator.Simulator.Time;
@@ -54,8 +81,8 @@ public class TimingAspect {
 			return new TimeScale(timeScale, millisecondsInTimeScale);
 		}
 		
-		final String timeScale;
-		final long millisecondsInTimeScale;
+		private final String timeScale;
+		private final long millisecondsInTimeScale;
 		
 		private TimeScale(String timeScale, final long millisecondsInTimeScale) {
 			this.timeScale = timeScale;
@@ -88,27 +115,43 @@ public class TimingAspect {
 		
 		AtomicLong atomicMilliseconds = new AtomicLong(milliseconds);
 		
-		List<TimeScale> timeScales = Arrays.asList(
-			TimeScale.DAY,
-			TimeScale.HOUR,
-			TimeScale.MINUTE,
-			TimeScale.SECOND,
-			TimeScale.MILLISECOND
-		);
-		
-		Map<TimeScale, Long> timeScalesMap= timeScales.stream()
-			.collect(Collectors.toMap(
-				ts -> ts, 
-				ts -> {
-					Long timeScalesTaken = ts.timeScalesContained(atomicMilliseconds.get());
-					atomicMilliseconds.set(ts.millisecondsLeft(milliseconds));
-					return timeScalesTaken;
-				}));
-
 		return String.join(", ", 
-				timeScales.stream()
-					.filter(ts -> timeScalesMap.get(ts) > 0)
-					.map(ts -> ts.getTimeScaleString(timeScalesMap.get(ts)))
-					.collect(Collectors.toList()));
+			Arrays.asList(
+				TimeScale.DAY,
+				TimeScale.HOUR,
+				TimeScale.MINUTE,
+				TimeScale.SECOND,
+				TimeScale.MILLISECOND
+			).stream()
+			.map(ts -> {
+				Long timeScalesTaken = ts.timeScalesContained(atomicMilliseconds.get());
+				atomicMilliseconds.set(ts.millisecondsLeft(milliseconds));
+				return new AbstractMap.SimpleEntry<>(ts, timeScalesTaken);
+			})
+			.filter(pair -> pair.getValue() > 0)
+			.map(pair -> pair.getKey().getTimeScaleString(pair.getValue()))
+			.collect(Collectors.toList()));
+	}
+	
+	public static <K, V> Stream<Entry<K, V>> orderedMapStream(Map<K, V> map, List<K> orderedKeys) {
+		assert(map.keySet().size() == orderedKeys.size());
+		
+		Iterable<Entry<K, V>> entryIterator = () -> new Iterator<Entry<K, V>>() {
+			Iterator<K> sourceIterator = orderedKeys.iterator();
+			
+			@Override
+			public boolean hasNext() {
+				return sourceIterator.hasNext();
+			}
+
+			@Override
+			public Entry<K, V> next() {
+				K key = sourceIterator.next();
+				V value = map.get(key);
+				return new AbstractMap.SimpleEntry<>(key, value);
+			}
+		};
+		
+		return StreamSupport.stream(entryIterator.spliterator(), false);
 	}
 }

@@ -5,6 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import main.timing.agent.TimingAspect;
+
 public interface Simulator<T> {
 
 	public void render();
@@ -19,5 +21,7 @@ public interface Simulator<T> {
 	@Target(ElementType.METHOD)
 	public @interface Time {
 		public String value() default "";
+		public TimingAspect.TimeScale minimumTimeScale() default TimingAspect.TimeScale.MILLISECOND;
+		public TimingAspect.TimeScale maximumTimeScale() default TimingAspect.TimeScale.DAY;
 	}
 }

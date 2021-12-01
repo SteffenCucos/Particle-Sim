@@ -2,40 +2,21 @@ package main.timing.agent;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterators;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
 import java.util.logging.Logger;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Aspect;
-
-import com.google.common.collect.Maps;
-
 import org.aspectj.lang.annotation.Around;
 
 import main.simulator.Simulator.Time;
@@ -53,13 +34,13 @@ public class TimingAspect {
 			return proceedingJoinPoint.proceed();
 		} catch (Throwable t) {
 			thrown = t;
-			throw t; // Re-throw the exception, the caller needs to know about it.
+			throw t; // Re-throw the throwable, the caller needs to know about it.
 		} finally {
 			/* According to https://docs.oracle.com/javase/tutorial/essential/exceptions/finally.html
 			 * finally blocks always run immediately after the try/catch blocks finish, so stopping the 
 			 * stop watch here will be accurate.*/
 			long endTime = System.currentTimeMillis();
-			String timeTaken = getScaledTime(endTime - startTime);
+			String timeTaken = getScaledTime(endTime - startTime, timeAnnotation.minimumTimeScale(), timeAnnotation.maximumTimeScale());
 			String outcome = thrown == null
 					? "took"
 					: String.format("failed with exception: {%s} after", thrown.getMessage());
@@ -69,22 +50,21 @@ public class TimingAspect {
 		}
 	}
 	
-	private static class TimeScale {
+	public enum TimeScale {
 		
-		static final TimeScale DAY = TimeScale.of("Day", 24*60*60*1000);
-		static final TimeScale HOUR = TimeScale.of("Hour", 60*60*1000);
-		static final TimeScale MINUTE =TimeScale.of("Minute", 60*1000);
-		static final TimeScale SECOND = TimeScale.of("Second", 1000);
-		static final TimeScale MILLISECOND = TimeScale.of("Millisecond", 1);
+		MILLISECOND("Millisecond", 1),
+		SECOND("Second", 1000 * MILLISECOND.millisecondsInTimeScale),
+		MINUTE("Minute", 60 * SECOND.millisecondsInTimeScale),
+		HOUR("Hour", 60 * MINUTE.millisecondsInTimeScale),
+		DAY("Day", 24 * HOUR.millisecondsInTimeScale),
+		WEEK("Week", 7 * DAY.millisecondsInTimeScale),
+		MONTH("Month", 4 * WEEK.millisecondsInTimeScale),
+		YEAR("Year", 12 * MONTH.millisecondsInTimeScale);
 		
-		static TimeScale of(String timeScale, final long millisecondsInTimeScale) {
-			return new TimeScale(timeScale, millisecondsInTimeScale);
-		}
+		public final String timeScale;
+		public final long millisecondsInTimeScale;
 		
-		private final String timeScale;
-		private final long millisecondsInTimeScale;
-		
-		private TimeScale(String timeScale, final long millisecondsInTimeScale) {
+		private TimeScale(String timeScale, long millisecondsInTimeScale) {
 			this.timeScale = timeScale;
 			this.millisecondsInTimeScale = millisecondsInTimeScale;
 		}
@@ -98,31 +78,35 @@ public class TimingAspect {
 		}
 		
 		public String getTimeScaleString(long timeScaleTaken) {
-			if (timeScaleTaken == 0) {
-				return "";
-			}
-			
+			// 0 Seconds, 1 Second, 2 Seconds ...
 			String postFix = timeScaleTaken == 1 ? "" : "s";
 			
 			return String.format("%s %s%s", timeScaleTaken, timeScale, postFix);
 		}
+		
+		public static List<TimeScale> getTimeScalesDecreasing() {
+			List<TimeScale> timeScales = getTimeScalesIncreasing();
+			Collections.reverse(timeScales);
+			return timeScales;
+		}
+		
+		public static List<TimeScale> getTimeScalesIncreasing() {
+			return Arrays.asList(TimeScale.values());
+		}
 	}
 	
-	public static String getScaledTime(long milliseconds) {
-		if (milliseconds == 0) {
-			return "0 Milliseconds";
+	public static String getScaledTime(long milliseconds, TimeScale minimumTimeScale, TimeScale maximumTimeScale) {
+		if (milliseconds < minimumTimeScale.millisecondsInTimeScale) {
+			return minimumTimeScale.getTimeScaleString(0);
 		}
 		
 		AtomicLong atomicMilliseconds = new AtomicLong(milliseconds);
 		
 		return String.join(", ", 
-			Arrays.asList(
-				TimeScale.DAY,
-				TimeScale.HOUR,
-				TimeScale.MINUTE,
-				TimeScale.SECOND,
-				TimeScale.MILLISECOND
-			).stream()
+			TimeScale.getTimeScalesDecreasing()
+			.stream()
+			// Only consider TimeScales that fit between the minimum & maximum timescales requested
+			.filter(ts -> ts.ordinal() >= minimumTimeScale.ordinal() && ts.ordinal() <= maximumTimeScale.ordinal())
 			.map(ts -> {
 				Long timeScalesTaken = ts.timeScalesContained(atomicMilliseconds.get());
 				atomicMilliseconds.set(ts.millisecondsLeft(milliseconds));
@@ -136,7 +120,7 @@ public class TimingAspect {
 	public static <K, V> Stream<Entry<K, V>> orderedMapStream(Map<K, V> map, List<K> orderedKeys) {
 		assert(map.keySet().size() == orderedKeys.size());
 		
-		Iterable<Entry<K, V>> entryIterator = () -> new Iterator<Entry<K, V>>() {
+		Iterator<Entry<K, V>> entryIterator = new Iterator<Entry<K, V>>() {
 			Iterator<K> sourceIterator = orderedKeys.iterator();
 			
 			@Override
@@ -152,6 +136,8 @@ public class TimingAspect {
 			}
 		};
 		
-		return StreamSupport.stream(entryIterator.spliterator(), false);
+		return StreamSupport.stream(
+				Spliterators.spliteratorUnknownSize(entryIterator, Spliterator.ORDERED),
+				false);
 	}
 }
